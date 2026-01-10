@@ -13,6 +13,7 @@ try:
     import streamlit as st
     API_KEY = st.secrets["OR_KEY"]
 except Exception:
+    print("No Streamlit secrets found, trying local key.py...")
     try:
         import key
         API_KEY = key.OR_key
@@ -151,6 +152,7 @@ Return only the SQL query, nothing else.
             return sql_query.strip()
         
         except Exception as e:
+            print(e)
             print(f"❌ Failed to generate SQL query: {e}")
             return None
     
@@ -162,6 +164,7 @@ Return only the SQL query, nothing else.
                 df_result = pd.DataFrame(result.fetchall(), columns=result.keys())
                 return df_result, None
         except Exception as e:
+            print(e)
             return None, str(e)
     
     def query(self, question, verbose=True):

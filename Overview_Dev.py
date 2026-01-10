@@ -8,20 +8,28 @@ import pickle
 import os
 # import css_renderer
 from assets.css_presets import html_sidebar, html_header, html_sidebar_clear_filters_btn, html_sidebar_nav_link
-API_KEY=""
+# Configuration
+API_KEY = ""
+
+# Try Streamlit secrets first (for cloud deployment), then fall back to local key.py
 try:
-    import key
-    API_KEY=key.OR_key
-except ImportError:
-    print("Need to get key.py file with API keys.")
+    import streamlit as st
+    API_KEY = st.secrets["OR_KEY"]
+except Exception:
+    print("No Streamlit secrets found, trying local key.py...")
+    try:
+        import key
+        API_KEY = key.OR_key
+    except ImportError:
+        print("No API key found. Set st.secrets['OR_KEY'] or create key.py")
 
 
 
-def initialize_ai_client():
+def initialize_ai_client(API_KEY=API_KEY):
     """Initialize AI client for chart descriptions"""
     try:
         from openai import OpenAI
-        API_KEY = "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"
+        # API_KEY = ""
         return OpenAI(api_key=API_KEY, base_url="https://openrouter.ai/api/v1")
     except Exception as e:
         st.error(f"Failed to initialize AI client: {e}")

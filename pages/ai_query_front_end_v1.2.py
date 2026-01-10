@@ -576,7 +576,7 @@ def execute_and_store_query(actual_input):
                 create_test_data_and_chart()
         else:
             # Query execution failed, show test data
-            st.error("❌ Query execution failed. Showing test data instead:")
+            st.error(f"❌ Query execution failed. Showing test data instead: {result}")
             create_test_data_and_chart()
             
     except Exception as e:
