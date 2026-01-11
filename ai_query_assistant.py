@@ -223,18 +223,27 @@ Return only the SQL query, nothing else.
         """
         if verbose:
             print(f"\n🤔 Question: {question}")
+            st.write(f"🤔 Question: {question}")
         
         # Generate SQL
         if verbose:
             print("🧠 Generating SQL query...")
         sql_query = self._generate_sql_query(question)
+        st.write(f"🧠 Generated SQL query: {sql_query}")
         
         if not sql_query:
+            st.write({
+                'sql': None,
+                'result': None,
+                'error': 'Failed to generate SQL query'
+            })
             return {
                 'sql': None,
                 'result': None,
                 'error': 'Failed to generate SQL query'
             }
+        
+
         
         if verbose:
             print(f"🔧 Generated SQL:\n{sql_query}")
@@ -243,6 +252,9 @@ Return only the SQL query, nothing else.
         if verbose:
             print("⚡ Executing query...")
         df_result, error = self._execute_sql_query(sql_query)
+
+        st.write(f"⚡ Executing query...", df_result if df_result is not None else f"Error: {error}")
+        st.write(os.path.exists('sales.db'))
         
         if error:
             if verbose:
