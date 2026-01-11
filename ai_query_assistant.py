@@ -174,7 +174,7 @@ Return only the SQL query, nothing else.
             st.write(f"🤖 Calling model: {MODELS[2]}")
             
             response = self.client.chat.completions.create(
-                model= MODELS[2],
+                model="google/gemini-2.0-flash-exp:free",
                 messages=[
                     {"role": "system", "content": "You are a SQL expert. Return only SQL queries, no explanations."},
                     {"role": "user", "content": prompt}
@@ -198,6 +198,7 @@ Return only the SQL query, nothing else.
             return sql_query.strip()
         
         except Exception as e:
+            st.error(f"❌ API CALL FAILED: {e}")
             print(e)
             print(f"❌ Failed to generate SQL query: {e}")
             return None
