@@ -455,7 +455,7 @@ for movement in customer_movements:
 
 # Layout styling removed for now
 
-st.plotly_chart(fig_price, width="stretch")
+st.plotly_chart(fig_price, use_container_width=True)
 
 # Regional performance analysis
 col1, col2 = st.columns(2)
@@ -473,7 +473,7 @@ with col1:
         height=400
     )
 # Layout styling removed for now
-    st.plotly_chart(fig_region, width="stretch")
+    st.plotly_chart(fig_region, use_container_width=True)
 
 with col2:
     st.subheader("⭐ Service Quality vs Price")
@@ -493,7 +493,7 @@ with col2:
         height=400
     )
 # Layout styling removed for now
-    st.plotly_chart(fig_scatter, width="stretch")
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
 # Customer Loss Analysis - Based on Real Data
 # st.markdown("---")
@@ -564,7 +564,7 @@ with tab1:
         
         st.dataframe(
             lost_df,
-            width="stretch",
+            use_container_width=True,
             hide_index=True
         )
         
@@ -602,7 +602,7 @@ with tab2:
         
         st.dataframe(
             at_risk_df,
-            width="stretch",
+            use_container_width=True,
             hide_index=True
         )
         

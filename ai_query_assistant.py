@@ -12,6 +12,8 @@ API_KEY = ""
 try:
     import streamlit as st
     API_KEY = st.secrets["OR_KEY"]
+    st.write("✅ Loaded API key from Streamlit secrets")
+    st.write(f"key is {API_KEY[:10]} till {API_KEY[-10:]}")
 except Exception:
     print("No Streamlit secrets found, trying local key.py...")
     try:

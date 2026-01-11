@@ -296,7 +296,7 @@ def display_enhanced_results(result_dict, question):
         # Enhanced dataframe display
         st.dataframe(
             df_result.style.format(precision=2),
-            width="stretch",
+            use_container_width=True,
             height=min(400, len(df_result) * 35 + 100)
         )
         
@@ -457,7 +457,7 @@ def simple_chart_section(result_dict, question):
             )
             
             # Display the chart
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
             
             # REMOVED THE PROBLEMATIC CLEAR BUTTON!
             # The chart will persist until you run a new query
@@ -691,7 +691,7 @@ def main():
             "🚀 Ask AI", 
             key='ai_search_button',
             type="primary",
-            width="stretch"
+            use_container_width=True
         )
     
     with col2:
