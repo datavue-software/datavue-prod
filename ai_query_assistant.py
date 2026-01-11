@@ -46,6 +46,22 @@ class AIQueryAssistant:
         # Initialize components
         self._setup_client()
         self._setup_database()
+
+    def _setup_client(self):
+        """Setup OpenAI client for OpenRouter"""
+        try:
+            # DEBUG: Check if API key exists
+            import streamlit as st
+            st.write(f"🔑 API Key loaded: {self.api_key[:20]}..." if self.api_key else "❌ NO API KEY")
+            
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
+        except Exception as e:
+            import streamlit as st
+            st.error(f"❌ Client setup failed: {e}")
+            raise
     
     def _setup_client(self):
         """Setup OpenAI client for OpenRouter"""
