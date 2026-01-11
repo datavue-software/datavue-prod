@@ -417,6 +417,7 @@ def run_sql(question, csv_file="partial_csv.csv", api_key=None, verbose=True):
         print(f"❌ Error: {result['error']}")
         return None
     
+    st.write(f"Your question is this: {result}")
     return result['result']
 
 def run():
