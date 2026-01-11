@@ -387,7 +387,7 @@ if st.session_state.active_plugins:
                 fig.add_trace(go.Scatter(x=forecast_data['day'], y=forecast_data['low'], 
                                        mode='lines+markers', name='Low', line=dict(color='#418FDE')))
                 fig.update_layout(title="Temperature Forecast", height=400)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             elif plugin_id == "finance":
                 st.subheader("Market Indices")
@@ -459,7 +459,7 @@ if st.session_state.active_plugins:
                 st.subheader("Recent Transactions")
                 transactions_df = pd.DataFrame(data['recent_transactions'])
                 transactions_df['amount'] = transactions_df['amount'].apply(lambda x: f"${x:,.2f}")
-                st.dataframe(transactions_df, use_container_width=True)
+                st.dataframe(transactions_df, width="stretch")
             
             elif plugin_id == "social_media":
                 st.subheader("Social Media Overview")
@@ -480,7 +480,7 @@ if st.session_state.active_plugins:
                 fig = px.pie(values=list(data['sentiment'].values()), 
                            names=list(data['sentiment'].keys()),
                            title="Sentiment Distribution")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             elif plugin_id == "logistics":
                 st.subheader("Logistics Overview")
@@ -496,7 +496,7 @@ if st.session_state.active_plugins:
                 # Active routes
                 st.subheader("Active Routes")
                 routes_df = pd.DataFrame(data['routes'])
-                st.dataframe(routes_df, use_container_width=True)
+                st.dataframe(routes_df, width="stretch")
 
 else:
     # Show empty state with suggestions

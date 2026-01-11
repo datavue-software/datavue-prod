@@ -1,3 +1,9 @@
+# For `width="stretch"`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+# 2026-01-11 02:19:05.148 Please replace `use_container_width` with `width`.
+
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -327,23 +333,23 @@ st.sidebar.subheader("📅 Date Range")
 # preset_col1, preset_col2 = st.sidebar.columns(2)
 
 # with preset_col1:
-#     if st.button("Last 30 Days", key="last_30", use_container_width=True):
+#     if st.button("Last 30 Days", key="last_30", width="stretch"):
 #         st.session_state.date_start = max_date - timedelta(days=30)
 #         st.session_state.date_end = max_date
 #         st.rerun()
     
-#     if st.button("Last 6 Months", key="last_6m", use_container_width=True):
+#     if st.button("Last 6 Months", key="last_6m", width="stretch"):
 #         st.session_state.date_start = max_date - timedelta(days=180)
 #         st.session_state.date_end = max_date
 #         st.rerun()
 
 # with preset_col2:
-#     if st.button("Last 90 Days", key="last_90", use_container_width=True):
+#     if st.button("Last 90 Days", key="last_90", width="stretch"):
 #         st.session_state.date_start = max_date - timedelta(days=90)
 #         st.session_state.date_end = max_date
 #         st.rerun()
     
-#     if st.button("All Time", key="all_time", use_container_width=True):
+#     if st.button("All Time", key="all_time", width="stretch"):
 #         st.session_state.date_start = min_date
 #         st.session_state.date_end = max_date
 #         st.rerun()
@@ -653,7 +659,7 @@ fig_revenue.update_layout(
     showlegend=False
 )
 # Display the chart without any wrapper
-st.plotly_chart(fig_revenue, use_container_width=True)
+st.plotly_chart(fig_revenue, width="stretch")
 
 
 # pie_col1, pie_col2 = st.columns([1, 1])
@@ -706,7 +712,7 @@ st.plotly_chart(fig_revenue, use_container_width=True)
 
 #     # Add container class for styling
 #     st.markdown('<div class="pie-chart-container">', unsafe_allow_html=True)
-#     st.plotly_chart(fig_category, use_container_width=True)
+#     st.plotly_chart(fig_category, width="stretch")
 #     st.markdown('</div>', unsafe_allow_html=True)
 
 # with pie_col2:
@@ -735,7 +741,7 @@ if 'show_description' not in st.session_state:
 # Describe button (centered)
 col_center = st.columns([1, 1, 1])
 with col_center[2]:
-    if st.button("🧠 Describe Chart", key="describe_pie", use_container_width=True):
+    if st.button("🧠 Describe Chart", key="describe_pie", width="stretch"):
         st.session_state.show_description = not st.session_state.show_description
         st.rerun()
 
@@ -747,7 +753,7 @@ if st.session_state.show_description:
     with pie_col1:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
         enhanced_fig = create_enhanced_pie_chart(category_dist, is_full_width=False)
-        st.plotly_chart(enhanced_fig, use_container_width=True)
+        st.plotly_chart(enhanced_fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
     
     with pie_col2:
@@ -804,7 +810,7 @@ else:
     # Full-width layout without description
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
     enhanced_fig = create_enhanced_pie_chart(category_dist, is_full_width=True)
-    st.plotly_chart(enhanced_fig, use_container_width=True)
+    st.plotly_chart(enhanced_fig, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -856,7 +862,7 @@ with pie_col3:
 
     # Add container class for styling
     st.markdown('<div class="pie-chart-container">', unsafe_allow_html=True)
-    st.plotly_chart(fig_region, use_container_width=True)
+    st.plotly_chart(fig_region, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -907,7 +913,7 @@ with pie_col4:
     
     # Add container class for styling
     st.markdown('<div class="pie-chart-container">', unsafe_allow_html=True)
-    st.plotly_chart(fig_product, use_container_width=True)
+    st.plotly_chart(fig_product, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
@@ -947,7 +953,7 @@ st.dataframe(
         {'selector': 'thead th:first-child', 'props': [('background-color', '#418FDE'), ('color', 'white')]},
         {'selector': 'td:first-child', 'props': [('font-weight', 'bold')]}
     ]),
-    use_container_width=True 
+    width="stretch" 
 )
 
 # Add a note about the data
