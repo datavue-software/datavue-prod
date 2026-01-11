@@ -63,17 +63,17 @@ class AIQueryAssistant:
             st.error(f"❌ Client setup failed: {e}")
             raise
     
-    def _setup_client(self):
-        """Setup OpenAI client for OpenRouter"""
-        try:
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url="https://openrouter.ai/api/v1"
-            )
-            print("✅ OpenAI client initialized successfully")
-        except Exception as e:
-            print(f"❌ Failed to initialize OpenAI client: {e}")
-            raise
+    # def _setup_client(self):
+    #     """Setup OpenAI client for OpenRouter"""
+    #     try:
+    #         self.client = OpenAI(
+    #             api_key=self.api_key,
+    #             base_url="https://openrouter.ai/api/v1"
+    #         )
+    #         print("✅ OpenAI client initialized successfully")
+    #     except Exception as e:
+    #         print(f"❌ Failed to initialize OpenAI client: {e}")
+    #         raise
     
     def _setup_database(self):
         """Load CSV and create SQLite database"""
