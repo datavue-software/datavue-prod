@@ -181,6 +181,9 @@ Return only the SQL query, nothing else.
                 ],
                 temperature=0
             )
+
+            st.write("🤖 Model response received")
+            st.write(response)
             
             sql_query = response.choices[0].message.content.strip()
             
