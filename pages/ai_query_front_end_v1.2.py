@@ -544,8 +544,10 @@ def execute_and_store_query(actual_input):
     
     # Execute new query
     try:
+        print("ai_query_assistant.run_sql")
         result = ai_query_assistant.run_sql(actual_input, verbose=False)
-        print(result)
+        
+        st.write(result)
         if result is not None:
             # Convert to our result format
             assistant = ai_query_assistant.AIQueryAssistant()
@@ -642,6 +644,7 @@ def main():
         with cols[i % 5]:
             if st.button(example, key=f"example_{i}", help="Click to use this example"):
                 st.session_state.selected_example = example.split(' ', 1)[1]  # Remove emoji
+                st.write(f"Selected example: {st.session_state.selected_example}")
                 st.rerun()
     
     st.markdown("---")
@@ -718,6 +721,7 @@ def main():
             time.sleep(0.5)  # Brief pause for UX
         
         # Execute and store query
+        st.write(f"Query test - this is actual_input: {actual_input}")
         execute_and_store_query(actual_input)
     
     elif search_button and not actual_input:

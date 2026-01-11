@@ -96,7 +96,7 @@ class AIQueryAssistant:
     #         print(f"❌ Database setup failed: {e}")
     #         raise
 
-
+    # run_sql
     def _setup_database(self):
         """Load CSV and create SQLite database"""
         try:
@@ -409,6 +409,7 @@ def run_sql(question, csv_file="partial_csv.csv", api_key=None, verbose=True):
     Returns:
         pandas.DataFrame: Query results
     """
+    st.write(f"Your question is this: {question}")
     assistant = AIQueryAssistant(csv_file, api_key)
     result = assistant.query(question, verbose=verbose)
     
