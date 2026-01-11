@@ -75,25 +75,48 @@ class AIQueryAssistant:
     #         print(f"❌ Failed to initialize OpenAI client: {e}")
     #         raise
     
+    # def _setup_database(self):
+    #     """Load CSV and create SQLite database"""
+    #     try:
+    #         # Read CSV file
+    #         self.df = pd.read_csv(self.csv_file_path, parse_dates=["sale_date"])
+    #         print(f"✅ Loaded CSV with {len(self.df)} records")
+            
+    #         # Create SQLite database in memory
+    #         self.engine = create_engine("sqlite:///sales.db")
+            
+    #         # Save DataFrame to SQLite
+    #         self.df.to_sql("sales", self.engine, if_exists="replace", index=False)
+    #         print("✅ Database setup completed")
+            
+    #     except FileNotFoundError:
+    #         print(f"❌ Could not find '{self.csv_file_path}'. Please ensure the file exists.")
+    #         raise
+    #     except Exception as e:
+    #         print(f"❌ Database setup failed: {e}")
+    #         raise
+
+
     def _setup_database(self):
         """Load CSV and create SQLite database"""
         try:
+            import streamlit as st
+            st.write(f"📂 Looking for CSV at: {self.csv_file_path}")
+            
             # Read CSV file
             self.df = pd.read_csv(self.csv_file_path, parse_dates=["sale_date"])
-            print(f"✅ Loaded CSV with {len(self.df)} records")
+            st.write(f"✅ Loaded CSV with {len(self.df)} records")
             
             # Create SQLite database in memory
             self.engine = create_engine("sqlite:///sales.db")
             
             # Save DataFrame to SQLite
             self.df.to_sql("sales", self.engine, if_exists="replace", index=False)
-            print("✅ Database setup completed")
+            st.write("✅ Database setup completed")
             
-        except FileNotFoundError:
-            print(f"❌ Could not find '{self.csv_file_path}'. Please ensure the file exists.")
-            raise
         except Exception as e:
-            print(f"❌ Database setup failed: {e}")
+            import streamlit as st
+            st.error(f"❌ Database setup failed: {e}")
             raise
     
     def _generate_sql_query(self, question):
@@ -146,6 +169,10 @@ Return only the SQL query, nothing else.
 """
 
         try:
+
+            import streamlit as st
+            st.write(f"🤖 Calling model: {MODELS[2]}")
+            
             response = self.client.chat.completions.create(
                 model= MODELS[2],
                 messages=[
