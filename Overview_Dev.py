@@ -467,6 +467,7 @@ st.sidebar.info(f"📊 **Selected Period:**\n{start_date} to \n{end_date}\n\n**R
 # Clear All Filters button (updated)
 if st.sidebar.button("Clear All Filters"):
     # Set flag to force preset reset
+    print("Pressing Filter Clear")
     st.session_state.force_preset_reset = True
     
     # Increment reset counter to force widget recreation

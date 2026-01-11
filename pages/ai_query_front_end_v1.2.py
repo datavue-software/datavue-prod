@@ -1,5 +1,3 @@
-# Here's what your file should look like after cleaning up:
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -547,7 +545,7 @@ def execute_and_store_query(actual_input):
     # Execute new query
     try:
         result = ai_query_assistant.run_sql(actual_input, verbose=False)
-        
+        print(result)
         if result is not None:
             # Convert to our result format
             assistant = ai_query_assistant.AIQueryAssistant()
