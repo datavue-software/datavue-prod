@@ -102,8 +102,6 @@ print(len(customers_to_leave));
 for x in customers_to_leave:
     print(x)
 
-
-
 warehouses = [
         {"warehouse_name": "Riverbend Warehouse", "warehouse_region": "North West"},
         {"warehouse_name": "Oakridge Storage", "warehouse_region": "North East"},
