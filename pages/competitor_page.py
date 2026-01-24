@@ -391,7 +391,6 @@ with col2:
         f"${total_lost_value:.1f}M",
         delta=f"-{len(lost_customers)} customers"
     )
-import math
 with col3:
     your_market_share = df_filtered[df_filtered['competitor'] == 'Your Company']['market_share'].mean()
     st.metric("Your Market Share", f"{your_market_share:.1f}%", delta=f"-{(12/500) * 100}")
@@ -494,48 +493,6 @@ with col2:
     )
 # Layout styling removed for now
     st.plotly_chart(fig_scatter, use_container_width=True)
-
-# Customer Loss Analysis - Based on Real Data
-# st.markdown("---")
-# st.subheader("💔 Customer Loss Analysis - Actual Churn Data")
-
-# # Create columns for lost vs at-risk customers
-# col1, col2 = st.columns(2)
-
-# with col1:
-#     st.markdown("#### ❌ **Customers Actually Lost**")
-#     lost_movements = [m for m in customer_movements if m['movement_type'] == 'LOST']
-    
-#     for movement in lost_movements:
-#         st.markdown(f"""
-#         **{movement['customer']}** 
-#         - **Lost to:** {movement['new_supplier']}
-#         - **Estimated Date:** {movement['date']}
-#         - **Primary Reason:** {movement['reason']}
-#         - **Days Since Last Order:** {movement['days_since_last_order']}
-#         - **Volume Decline:** {movement['volume_decline_percent']:.1f}%
-#         - **Total Value Lost:** ${movement['annual_value']:,.0f}
-#         - **Region:** {movement['region']}
-#         ---
-#         """)
-
-# with col2:
-#     st.markdown("#### ⚠️ **Customers At High Risk**")
-#     at_risk_movements = [m for m in customer_movements if m['movement_type'] == 'AT_RISK']
-    
-#     for movement in at_risk_movements:
-#         st.markdown(f"""
-#         **{movement['customer']}** 
-#         - **Threat:** {movement['potential_supplier']} actively pursuing
-#         - **Risk Level:** {movement['risk_probability']}
-#         - **Warning Signs:** {movement['reason']}
-#         - **Days Since Last Order:** {movement['days_since_last_order']}
-#         - **Value at Risk:** ${movement['annual_value']:,.0f}
-#         - **Region:** {movement['region']}
-
-#         ---
-#         ---
-#         """)
 
 st.markdown("---")
 st.subheader("💔 Customer Loss Analysis - Actual Churn Data")

@@ -12,10 +12,7 @@ API_KEY = ""
 try:
     import streamlit as st
     API_KEY = st.secrets["OR_KEY"]
-    st.write("✅ Loaded API key from Streamlit secrets")
-    st.write(f"key is {API_KEY[:10]} till {API_KEY[-10:]}")
 except Exception:
-    print("No Streamlit secrets found, trying local key.py...")
     try:
         import key
         API_KEY = key.OR_key
@@ -52,10 +49,6 @@ class AIQueryAssistant:
     def _setup_client(self):
         """Setup OpenAI client for OpenRouter"""
         try:
-            # DEBUG: Check if API key exists
-            import streamlit as st
-            st.write(f"🔑 API Key loaded: {self.api_key[:20]}..." if self.api_key else "❌ NO API KEY")
-            
             self.client = OpenAI(
                 api_key=self.api_key,
                 base_url="https://openrouter.ai/api/v1"
@@ -64,41 +57,7 @@ class AIQueryAssistant:
             import streamlit as st
             st.error(f"❌ Client setup failed: {e}")
             raise
-    
-    # def _setup_client(self):
-    #     """Setup OpenAI client for OpenRouter"""
-    #     try:
-    #         self.client = OpenAI(
-    #             api_key=self.api_key,
-    #             base_url="https://openrouter.ai/api/v1"
-    #         )
-    #         print("✅ OpenAI client initialized successfully")
-    #     except Exception as e:
-    #         print(f"❌ Failed to initialize OpenAI client: {e}")
-    #         raise
-    
-    # def _setup_database(self):
-    #     """Load CSV and create SQLite database"""
-    #     try:
-    #         # Read CSV file
-    #         self.df = pd.read_csv(self.csv_file_path, parse_dates=["sale_date"])
-    #         print(f"✅ Loaded CSV with {len(self.df)} records")
-            
-    #         # Create SQLite database in memory
-    #         self.engine = create_engine("sqlite:///sales.db")
-            
-    #         # Save DataFrame to SQLite
-    #         self.df.to_sql("sales", self.engine, if_exists="replace", index=False)
-    #         print("✅ Database setup completed")
-            
-    #     except FileNotFoundError:
-    #         print(f"❌ Could not find '{self.csv_file_path}'. Please ensure the file exists.")
-    #         raise
-    #     except Exception as e:
-    #         print(f"❌ Database setup failed: {e}")
-    #         raise
 
-    # run_sql
     def _setup_database(self):
         """Load CSV and create SQLite database"""
         try:
@@ -171,10 +130,8 @@ Return only the SQL query, nothing else.
 """
 
         try:
-
             import streamlit as st
-            st.write(f"🤖 Calling model: {MODELS[2]}")
-            
+
             response = self.client.chat.completions.create(
                 model="google/gemini-2.0-flash-exp:free",
                 messages=[
@@ -183,9 +140,6 @@ Return only the SQL query, nothing else.
                 ],
                 temperature=0
             )
-
-            st.write("🤖 Model response received")
-            st.write(response)
             
             sql_query = response.choices[0].message.content.strip()
             
@@ -229,20 +183,16 @@ Return only the SQL query, nothing else.
         """
         if verbose:
             print(f"\n🤔 Question: {question}")
-            st.write(f"🤔 Question: {question}")
-        
+
         # Generate SQL
         if verbose:
             print("🧠 Generating SQL query...")
         sql_query = self._generate_sql_query(question)
-        st.write(f"🧠 Generated SQL query: {sql_query}")
-        
+
+        import streamlit as st
+        st.write(f"📝 Generated SQL: {sql_query}")
+
         if not sql_query:
-            st.write({
-                'sql': None,
-                'result': None,
-                'error': 'Failed to generate SQL query'
-            })
             return {
                 'sql': None,
                 'result': None,
@@ -259,8 +209,10 @@ Return only the SQL query, nothing else.
             print("⚡ Executing query...")
         df_result, error = self._execute_sql_query(sql_query)
 
-        st.write(f"⚡ Executing query...", df_result if df_result is not None else f"Error: {error}")
-        st.write(os.path.exists('sales.db'))
+        if df_result is not None:
+            st.write(f"✅ Query returned {len(df_result)} rows")
+        else:
+            st.write(f"❌ Query failed: {error}")
         
         if error:
             if verbose:
@@ -317,102 +269,6 @@ Return only the SQL query, nothing else.
             except Exception as e:
                 print(f"❌ Unexpected error: {e}")
 
-    # def _generate_sql_query(self, question):
-    #     """Generate SQL query using OpenAI/OpenRouter"""
-        
-    #     prompt = f"""
-    # You are an expert AI assistant that generates **accurate SQL queries for SQLite** databases based on user 
-    # questions in plain English. 
-    # You are working with the following table:
-
-    # **Table: sales**
-
-    # | Column Name             | Description                                     |
-    # |-------------------------|-------------------------------------------------|
-    # | sale_date               | Date of the sale (format: YYYY-MM-DD)          |
-    # | customer_name           | Full name of the customer                       |
-    # | customer_category       | Type of customer (e.g., 'Local', 'Export')      |
-    # | customer_company_size   | Size of the customer's company (e.g., 'Small')  |
-    # | satisfaction_rating     | Rating from 1 to 5                              |
-    # | discount_offered        | 'Yes' or 'No'                                   |
-    # | discount_amount_percent | Discount percentage (integer)                  |
-    # | product_name            | Name of the product                             |
-    # | base_price_per_ton      | Price per ton before discount (integer)        |
-    # | warehouse_name          | Warehouse name                                  |
-    # | warehouse_region        | Region of warehouse (e.g., 'North')             |
-    # | final_tons_sold         | Final tons sold (float)                         |
-    # | sale_amount             | Final sale amount in currency (float)           |
-
-    # 🧠 **Rules for Generating SQL**:
-    # - Use **`customer_category`** when the user mentions customer type like 'Local' or 'Online' or 'International'
-    # - Use **`customer_company_size`** for company size like 'Small', 'Medium', 'Large' or 'Mega'
-    # - Use **`final_tons_sold`** if the user refers to "tons" or "tonnes" sold
-    # - Always filter dates using `sale_date`
-    # - Assume SQLite syntax
-    # - Return **only the SQL query**, no explanations
-    # - For **`customer_name`**, you can assume that the user may sometimes not be fully sure of the name, in that case use the LIKE operator. For example, the user might say that they need sales for customer that is named something like Downtown Grains
-    # - Use proper SQL formatting and syntax
-    # - Add LIMIT 100 to prevent overly large results unless specifically asked for all results
-
-    # Here is some feedback from before, if you are asked anything related to region, for e.g. North, then you'll have to use like operator instead of equal, because
-    # regions look like this: West Coast, Northern Highlands or South East. Even if they ask for Northern, use North so we do not miss out important data.
-
-    # Unless the user says to use exactly the word they say, then you can use 'equal to' (=) operator
-
-    # Now, generate a SQL query for the following user question:
-
-    # **User question:** "{question}"
-
-    # Return only the SQL query, nothing else. 
-    # """
-
-    #     try:
-    #         response = self.client.chat.completions.create(
-    #             model="mistralai/devstral-small:free",
-    #             messages=[
-    #                 {"role": "system", "content": "You are a SQL expert. Return only SQL queries, no explanations."},
-    #                 {"role": "user", "content": prompt}
-    #             ],
-    #             temperature=0
-    #         )
-            
-    #         # Check if response is None or empty
-    #         if response is None:
-    #             print("❌ AI service returned None response")
-    #             return None
-                
-    #         if not hasattr(response, 'choices') or not response.choices:
-    #             print("❌ AI service returned empty response")
-    #             return None
-                
-    #         if not response.choices[0] or not hasattr(response.choices[0], 'message'):
-    #             print("❌ AI service returned malformed response")
-    #             return None
-                
-    #         sql_query = response.choices[0].message.content
-            
-    #         if sql_query is None:
-    #             print("❌ AI service returned None content")
-    #             return None
-                
-    #         sql_query = sql_query.strip()
-            
-    #         # Clean up the SQL query
-    #         if sql_query.startswith("```sql"):
-    #             sql_query = sql_query[6:]
-    #         if sql_query.startswith("```"):
-    #             sql_query = sql_query[3:]
-    #         if sql_query.endswith("```"):
-    #             sql_query = sql_query[:-3]
-            
-    #         return sql_query.strip()
-        
-    #     except Exception as e:
-    #         print(f"❌ Failed to generate SQL query: {e}")
-    #         return None
-
-# ALSO: Add a fallback function to your main file for testing:
-
 
 # Convenience functions for backward compatibility
 def run_sql(question, csv_file="partial_csv.csv", api_key=None, verbose=True):
@@ -427,21 +283,45 @@ def run_sql(question, csv_file="partial_csv.csv", api_key=None, verbose=True):
     Returns:
         pandas.DataFrame: Query results
     """
-    st.write(f"Your question is this: {question}")
     assistant = AIQueryAssistant(csv_file, api_key)
     result = assistant.query(question, verbose=verbose)
-    
+
     if result['error']:
         print(f"❌ Error: {result['error']}")
         return None
-    
-    st.write(f"Your question is this: {result}")
+
     return result['result']
 
 def run():
     """Backward compatibility function for interactive mode"""
     assistant = AIQueryAssistant()
     assistant.run_interactive()
+
+
+# Cached assistant for Streamlit apps - reuse across queries
+def get_cached_assistant(csv_file="partial_csv.csv", api_key=None):
+    """
+    Get or create a cached AIQueryAssistant instance.
+    This prevents recreating the database connection on every query.
+
+    Usage in Streamlit:
+        from ai_query_assistant import get_cached_assistant
+
+        assistant = get_cached_assistant()
+        result = assistant.query("What are total sales?")
+    """
+    try:
+        import streamlit as st
+
+        @st.cache_resource
+        def _create_assistant():
+            return AIQueryAssistant(csv_file, api_key)
+
+        return _create_assistant()
+    except ImportError:
+        # If not using Streamlit, just return a new instance
+        return AIQueryAssistant(csv_file, api_key)
+
 
 # Main execution
 if __name__ == "__main__":
