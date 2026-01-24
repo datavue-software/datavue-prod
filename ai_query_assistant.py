@@ -177,7 +177,7 @@ Return only the SQL query, nothing else.
             st.write(f"🤖 Calling model: {MODELS[-1]}")
             
             response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+                model="anthropic/claude-3-haiku", # "google/gemini-2.0-flash-exp:free",
                 messages=[
                     {"role": "system", "content": "You are a SQL expert. Return only SQL queries, no explanations."},
                     {"role": "user", "content": prompt}
