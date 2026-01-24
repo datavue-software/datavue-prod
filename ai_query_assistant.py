@@ -28,6 +28,7 @@ MODELS = [
     "mistralai/ministral-3b-2512",
     "minimax/minimax-m2",
     "openai/gpt-oss-120b",
+    'anthropic/claude-3-haiku'
 ]
 
 class AIQueryAssistant:
@@ -173,7 +174,7 @@ Return only the SQL query, nothing else.
         try:
 
             import streamlit as st
-            st.write(f"🤖 Calling model: {MODELS[1]}")
+            st.write(f"🤖 Calling model: {MODELS[-1]}")
             
             response = self.client.chat.completions.create(
                 model="google/gemini-2.0-flash-exp:free",
