@@ -391,12 +391,26 @@ def get_chart_insights(chart_data: Dict, chart_type: str,
 if __name__ == "__main__":
     # Example usage
     API_KEY=""
-    try:
-        import key
-        API_KEY=key.OR_key
-    except ImportError:
-        print("Need to get key.py file with API keys.")
+    # try:
+    #     import key
+    #     API_KEY=key.OR_key
+    # except ImportError:
+    #     print("Need to get key.py file with API keys.")
     analyzer = AIInsightsAnalyzer(API_KEY)
+
+
+    try:
+        import streamlit as st
+        API_KEY = st.secrets["OR_KEY"]
+        st.write("Loaded API key from Streamlit secrets")
+        st.write(f"key is {API_KEY[:10]} till {API_KEY[-10:]}")
+    except Exception:
+        print("No Streamlit secrets found, trying local key.py...")
+        try:
+            import key
+            API_KEY = key.OR_key
+        except ImportError:
+            print("No API key found. Set st.secrets['OR_KEY'] or create key.py")
     
     # Load sample data
     df = pd.read_csv("partial_csv.csv", parse_dates=["sale_date"])

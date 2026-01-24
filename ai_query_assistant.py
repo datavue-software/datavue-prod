@@ -173,7 +173,7 @@ Return only the SQL query, nothing else.
         try:
 
             import streamlit as st
-            st.write(f"🤖 Calling model: {MODELS[2]}")
+            st.write(f"🤖 Calling model: {MODELS[1]}")
             
             response = self.client.chat.completions.create(
                 model="google/gemini-2.0-flash-exp:free",
@@ -183,6 +183,8 @@ Return only the SQL query, nothing else.
                 ],
                 temperature=0
             )
+
+            print("CURR ERROR:", response)
 
             st.write("🤖 Model response received")
             st.write(response)
