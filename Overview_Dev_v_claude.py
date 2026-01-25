@@ -15,7 +15,10 @@ import os
 # import css_renderer
 from assets.css_presets import html_sidebar, html_header, html_sidebar_clear_filters_btn, html_sidebar_nav_link
 # Configuration
-API_KEY = ""
+
+
+MODEL_TEMP = "anthropic/claude-3-haiku";
+API_KEY = "";
 
 # Try Streamlit secrets first (for cloud deployment), then fall back to local key.py
 try:
@@ -90,7 +93,7 @@ Format with clear headings and bullet points for readability.
 """
     try:
         response = ai_client.chat.completions.create(
-            model="mistralai/devstral-small:free",
+            model=MODEL_TEMP,
             messages=[
                 {
                     "role": "system", 
@@ -183,7 +186,7 @@ Format with clear headings and bullet points for readability.
 
     try:
         response = ai_client.chat.completions.create(
-            model="mistralai/devstral-small:free",
+            model=MODEL_TEMP, 
             messages=[
                 {
                     "role": "system",
@@ -194,6 +197,7 @@ Format with clear headings and bullet points for readability.
             temperature=0.4,
             max_tokens=1500
         )
+        
         return response.choices[0].message.content.strip()
 
     except Exception as e:
