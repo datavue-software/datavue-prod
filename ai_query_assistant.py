@@ -25,6 +25,7 @@ MODELS = [
     "mistralai/ministral-3b-2512",
     "minimax/minimax-m2",
     "openai/gpt-oss-120b",
+    'anthropic/claude-3-haiku'
 ]
 
 class AIQueryAssistant:
@@ -132,14 +133,21 @@ Return only the SQL query, nothing else.
         try:
             import streamlit as st
 
+            st.write(f"🤖 Calling model: {MODELS[-1]}")
+            
             response = self.client.chat.completions.create(
-                model="google/gemini-2.0-flash-exp:free",
+                model="anthropic/claude-3-haiku", # "google/gemini-2.0-flash-exp:free",
                 messages=[
                     {"role": "system", "content": "You are a SQL expert. Return only SQL queries, no explanations."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0
             )
+
+            print("CURR ERROR:", response)
+
+            st.write("🤖 Model response received")
+            st.write(response)
             
             sql_query = response.choices[0].message.content.strip()
             

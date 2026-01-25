@@ -12,11 +12,9 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import pickle
 import os
-import historical_dummy_data_generator
 # import css_renderer
 from assets.css_presets import html_sidebar, html_header, html_sidebar_clear_filters_btn, html_sidebar_nav_link
 # Configuration
-
 API_KEY = ""
 
 # Try Streamlit secrets first (for cloud deployment), then fall back to local key.py
