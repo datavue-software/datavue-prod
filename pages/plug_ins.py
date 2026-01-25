@@ -6,6 +6,109 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
+import requests
+
+# API Configuration - Store in Streamlit secrets for production
+try:
+    OPENWEATHER_API_KEY = st.secrets.get("OPENWEATHER_API_KEY", "")
+    ALPHAVANTAGE_API_KEY = st.secrets.get("ALPHAVANTAGE_API_KEY", "")
+    FRED_API_KEY = st.secrets.get("FRED_API_KEY", "")
+except:
+    # Fallback for local development - replace with your keys
+    OPENWEATHER_API_KEY = ""  # Get from https://openweathermap.org/api
+    ALPHAVANTAGE_API_KEY = ""  # Get from https://www.alphavantage.co/support/#api-key
+    FRED_API_KEY = ""  # Get from https://fred.stlouisfed.org/docs/api/api_key.html
+
+
+# Helper functions for API calls
+def fetch_weather_data(city="Chicago"):
+    """Fetch real weather data from OpenWeatherMap API"""
+    if not OPENWEATHER_API_KEY:
+        return None
+
+    try:
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=imperial"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                "current_temp": int(data['main']['temp']),
+                "humidity": data['main']['humidity'],
+                "wind_speed": int(data['wind']['speed']),
+                "condition": data['weather'][0]['main']
+            }
+    except Exception as e:
+        st.warning(f"Weather API error: {str(e)}")
+    return None
+
+
+def fetch_finance_data():
+    """Fetch real stock market data from Alpha Vantage API"""
+    if not ALPHAVANTAGE_API_KEY:
+        return None
+
+    try:
+        symbols = {'SPY': 'S&P 500', 'QQQ': 'NASDAQ', 'DIA': 'DOW'}
+        market_data = {}
+
+        for symbol, name in symbols.items():
+            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={ALPHAVANTAGE_API_KEY}"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if 'Global Quote' in data and data['Global Quote']:
+                    quote = data['Global Quote']
+                    price = float(quote['05. price'])
+                    change = float(quote['09. change'])
+                    change_pct = float(quote['10. change percent'].rstrip('%'))
+                    market_data[name] = {
+                        "value": price,
+                        "change": change,
+                        "change_pct": change_pct
+                    }
+
+        if market_data:
+            return {"market_indices": market_data}
+    except Exception as e:
+        st.warning(f"Finance API error: {str(e)}")
+    return None
+
+
+def fetch_economy_data():
+    """Fetch real economic indicators from FRED API"""
+    if not FRED_API_KEY:
+        return None
+
+    try:
+        indicators = {
+            'UNRATE': 'Unemployment Rate',
+            'CPIAUCSL': 'Inflation Rate',
+            'GDP': 'GDP Growth',
+            'DFF': 'Interest Rate'
+        }
+
+        indicator_data = {}
+        for series_id, name in indicators.items():
+            url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_API_KEY}&file_type=json&limit=2&sort_order=desc"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if 'observations' in data and len(data['observations']) >= 2:
+                    latest = float(data['observations'][-1]['value'])
+                    previous = float(data['observations'][-2]['value'])
+                    change = latest - previous
+                    indicator_data[name] = {
+                        "value": latest,
+                        "change": change,
+                        "unit": "%"
+                    }
+
+        if indicator_data:
+            return {"indicators": indicator_data}
+    except Exception as e:
+        st.warning(f"Economy API error: {str(e)}")
+    return None
+
 
 # Page configuration
 st.set_page_config(
@@ -163,12 +266,13 @@ AVAILABLE_PLUGINS = {
     "weather": {
         "name": "Weather Dashboard",
         "icon": "🌤️",
-        "description": "Real-time weather data and forecasts for your business locations",
+        "description": "Real-time weather data for your business locations",
         "category": "Operations",
-        "data_generator": lambda: {
+        "data_generator": lambda: fetch_weather_data() or {
             "current_temp": np.random.randint(65, 85),
             "humidity": np.random.randint(40, 80),
             "wind_speed": np.random.randint(5, 15),
+            "condition": "Clear",
             "forecast": [
                 {"day": "Today", "high": 82, "low": 68, "condition": "Sunny"},
                 {"day": "Tomorrow", "high": 79, "low": 65, "condition": "Partly Cloudy"},
@@ -181,9 +285,9 @@ AVAILABLE_PLUGINS = {
     "finance": {
         "name": "Financial Markets",
         "icon": "💹",
-        "description": "Stock market data, commodity prices, and financial indicators",
+        "description": "Real-time stock market data and financial indicators",
         "category": "Finance",
-        "data_generator": lambda: {
+        "data_generator": lambda: fetch_finance_data() or {
             "market_indices": {
                 "S&P 500": {"value": 4567.89, "change": 23.45, "change_pct": 0.52},
                 "NASDAQ": {"value": 14567.23, "change": -45.67, "change_pct": -0.31},
@@ -199,9 +303,9 @@ AVAILABLE_PLUGINS = {
     "economy": {
         "name": "Economic Indicators",
         "icon": "📊",
-        "description": "Key economic data including inflation, employment, and GDP metrics",
+        "description": "Real-time key economic data from Federal Reserve",
         "category": "Analytics",
-        "data_generator": lambda: {
+        "data_generator": lambda: fetch_economy_data() or {
             "indicators": {
                 "Unemployment Rate": {"value": 3.7, "change": -0.1, "unit": "%"},
                 "Inflation Rate": {"value": 3.2, "change": 0.2, "unit": "%"},
@@ -369,25 +473,31 @@ if st.session_state.active_plugins:
             data = plugin_info['data_generator']()
             
             if plugin_id == "weather":
-                col1, col2, col3 = st.columns(3)
+                st.subheader("Current Weather Conditions")
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("Temperature", f"{data['current_temp']}°F")
                 with col2:
                     st.metric("Humidity", f"{data['humidity']}%")
                 with col3:
                     st.metric("Wind Speed", f"{data['wind_speed']} mph")
-                
-                # 5-day forecast
-                st.subheader("5-Day Forecast")
-                forecast_data = pd.DataFrame(data['forecast'])
-                
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=forecast_data['day'], y=forecast_data['high'], 
-                                       mode='lines+markers', name='High', line=dict(color='#FF6B35')))
-                fig.add_trace(go.Scatter(x=forecast_data['day'], y=forecast_data['low'], 
-                                       mode='lines+markers', name='Low', line=dict(color='#418FDE')))
-                fig.update_layout(title="Temperature Forecast", height=400)
-                st.plotly_chart(fig, use_container_width=True)
+                with col4:
+                    st.metric("Conditions", data.get('condition', 'N/A'))
+
+                # 5-day forecast (only if available)
+                if 'forecast' in data:
+                    st.subheader("5-Day Forecast")
+                    forecast_data = pd.DataFrame(data['forecast'])
+
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(x=forecast_data['day'], y=forecast_data['high'],
+                                           mode='lines+markers', name='High', line=dict(color='#FF6B35')))
+                    fig.add_trace(go.Scatter(x=forecast_data['day'], y=forecast_data['low'],
+                                           mode='lines+markers', name='Low', line=dict(color='#418FDE')))
+                    fig.update_layout(title="Temperature Forecast", height=400)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("💡 5-day forecast available with full API integration")
             
             elif plugin_id == "finance":
                 st.subheader("Market Indices")
@@ -535,5 +645,24 @@ if st.session_state.active_plugins:
             st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("💡 **Note:** Plugin data is simulated for demonstration. Real integrations will connect to actual APIs and services.")
+st.sidebar.markdown("### 🔑 API Configuration")
+
+# Show API status
+api_status = {
+    "Weather (OpenWeather)": "✅ Configured" if OPENWEATHER_API_KEY else "❌ Not Configured",
+    "Finance (Alpha Vantage)": "✅ Configured" if ALPHAVANTAGE_API_KEY else "❌ Not Configured",
+    "Economy (FRED)": "✅ Configured" if FRED_API_KEY else "❌ Not Configured"
+}
+
+for api_name, status in api_status.items():
+    st.sidebar.markdown(f"**{api_name}:** {status}")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("💡 **Note:** Real APIs are used when configured. Falls back to dummy data otherwise.")
 st.sidebar.markdown("🔄 **Auto-refresh:** Every 5 minutes when active")
+st.sidebar.markdown("""
+**Get API Keys:**
+- [OpenWeather](https://openweathermap.org/api) (FREE - 1000 calls/day)
+- [Alpha Vantage](https://www.alphavantage.co/support/#api-key) (FREE - 25 calls/day)
+- [FRED](https://fred.stlouisfed.org/docs/api/api_key.html) (FREE - Unlimited)
+""")

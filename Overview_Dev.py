@@ -109,6 +109,99 @@ Format with clear headings and bullet points for readability.
     except Exception as e:
         return f"Error generating AI description: {str(e)}"
 
+
+def generate_business_journey(df_data, ai_client):
+    """Generate comprehensive business journey analysis"""
+    if not ai_client:
+        return "AI description unavailable - client not initialized."
+
+    # Calculate date range
+    date_range_days = (df_data['sale_date'].max() - df_data['sale_date'].min()).days
+    years_covered = date_range_days / 365.25
+
+    # Monthly revenue trends
+    monthly_revenue = df_data.groupby(df_data['sale_date'].dt.to_period('M'))['sale_amount'].sum()
+    avg_monthly_revenue = monthly_revenue.mean()
+    peak_month = monthly_revenue.idxmax()
+    peak_revenue = monthly_revenue.max()
+    lowest_month = monthly_revenue.idxmin()
+    lowest_revenue = monthly_revenue.min()
+
+    # Growth metrics
+    if len(monthly_revenue) > 1:
+        first_half_avg = monthly_revenue[:len(monthly_revenue)//2].mean()
+        second_half_avg = monthly_revenue[len(monthly_revenue)//2:].mean()
+        growth_rate = ((second_half_avg - first_half_avg) / first_half_avg * 100) if first_half_avg > 0 else 0
+    else:
+        growth_rate = 0
+
+    # Customer insights
+    top_customers = df_data.groupby('customer_name')['sale_amount'].sum().nlargest(5)
+    total_customers = df_data['customer_name'].nunique()
+    top_5_contribution = (top_customers.sum() / df_data['sale_amount'].sum() * 100)
+
+    # Product insights
+    top_products = df_data.groupby('product_name')['sale_amount'].sum().nlargest(3)
+
+    # Regional insights
+    top_regions = df_data.groupby('warehouse_region')['sale_amount'].sum().nlargest(3)
+
+    # Create comprehensive prompt
+    prompt = f"""
+Analyze this business performance over the past {years_covered:.1f} years and provide a comprehensive business journey narrative:
+
+**Overall Performance:**
+- Total Revenue: ${df_data['sale_amount'].sum():,.0f}
+- Average Monthly Revenue: ${avg_monthly_revenue:,.0f}
+- Total Transactions: {len(df_data):,}
+- Unique Customers: {total_customers}
+
+**Growth Trends:**
+- Period-over-period growth: {growth_rate:+.1f}%
+- Peak Month: {peak_month} (${peak_revenue:,.0f})
+- Lowest Month: {lowest_month} (${lowest_revenue:,.0f})
+
+**Top 5 Customers (contributing {top_5_contribution:.1f}% of revenue):**
+{chr(10).join([f"- {name}: ${amount:,.0f}" for name, amount in top_customers.items()])}
+
+**Top 3 Products:**
+{chr(10).join([f"- {name}: ${amount:,.0f}" for name, amount in top_products.items()])}
+
+**Top 3 Regions:**
+{chr(10).join([f"- {name}: ${amount:,.0f}" for name, amount in top_regions.items()])}
+
+Please provide a comprehensive business journey analysis including:
+1. **Journey Overview** - Summarize the {years_covered:.1f}-year business trajectory
+2. **Key Milestones** - Highlight peak performance periods and what likely drove them
+3. **Challenges Faced** - Identify low points and potential causes
+4. **Customer Dynamics** - Analyze customer concentration and loyalty patterns
+5. **Growth Drivers** - What products, regions, or segments drove growth
+6. **Future Outlook** - Based on trends, what should the business focus on next
+7. **Strategic Recommendations** - 3-5 actionable insights for continued growth
+
+Make it engaging, data-driven, and tell a compelling story of the business journey.
+Format with clear headings and bullet points for readability.
+"""
+
+    try:
+        response = ai_client.chat.completions.create(
+            model="mistralai/devstral-small:free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a senior business strategist analyzing multi-year business performance. Provide insights that are specific, actionable, and tell a compelling story."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.4,
+            max_tokens=1500
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        return f"Error generating business journey: {str(e)}"
+
+
 def create_enhanced_pie_chart(category_dist, is_full_width=True):
     """Create pie chart with dynamic sizing"""
     
@@ -470,27 +563,20 @@ df_filtered = df[
 # Display current selection
 st.sidebar.info(f"📊 **Selected Period:**\n{start_date} to \n{end_date}\n\n**Records:** {len(df_filtered):,}")
 
-# Clear All Filters button (updated)
-if st.sidebar.button("Clear All Filters"):
-    # Set flag to force preset reset
-    print("Pressing Filter Clear")
-    st.session_state.force_preset_reset = True
-    
-    # Increment reset counter to force widget recreation
-    st.session_state.preset_reset_counter = st.session_state.get('preset_reset_counter', 0) + 1
-    
-    # Clear all session state keys to reset everything
+# Clear All Filters button
+if st.sidebar.button("🔄 Clear All Filters", use_container_width=True):
+    # Clear all filter-related session state
     keys_to_clear = [
-        'date_preset', 'date_start', 'date_end', 
+        'date_preset', 'date_start', 'date_end',
         'date_start_input', 'date_end_input',
-        'customer_filter', 'category_filter', 
+        'customer_filter', 'category_filter',
         'region_filter', 'product_filter', 'search_input'
     ]
-    
+
     for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
-    
+
     st.rerun()
 
 # Other filters (move this BEFORE the charts)
@@ -540,19 +626,61 @@ with top_most_col1:
 
 col1, col2, col3, col4 = st.columns(4)
 
+# Calculate headline metrics (all-time, unfiltered)
 total_revenue = df['sale_amount'].sum()
-avg_order_size = df['final_tons_sold'].mean()
 total_volume = df['final_tons_sold'].sum()
+avg_order_size = df['final_tons_sold'].mean()
 total_customers = df['customer_name'].nunique()
 
+# Calculate last 30 days for delta comparison
+current_date = df['sale_date'].max()
+last_30_days_start = current_date - pd.Timedelta(days=30)
+previous_30_days_start = last_30_days_start - pd.Timedelta(days=30)
+
+# Current period (last 30 days)
+current_period = df[df['sale_date'] >= last_30_days_start]
+current_revenue = current_period['sale_amount'].sum()
+current_volume = current_period['final_tons_sold'].sum()
+current_avg_order = current_period['final_tons_sold'].mean()
+current_customers = current_period['customer_name'].nunique()
+
+# Previous period (30 days before that)
+previous_period = df[(df['sale_date'] >= previous_30_days_start) & (df['sale_date'] < last_30_days_start)]
+previous_revenue = previous_period['sale_amount'].sum()
+previous_volume = previous_period['final_tons_sold'].sum()
+previous_avg_order = previous_period['final_tons_sold'].mean()
+previous_customers = previous_period['customer_name'].nunique()
+
+# Calculate percentage changes
+revenue_change = ((current_revenue - previous_revenue) / previous_revenue * 100) if previous_revenue > 0 else 0
+volume_change = ((current_volume - previous_volume) / previous_volume * 100) if previous_volume > 0 else 0
+avg_order_change = ((current_avg_order - previous_avg_order) / previous_avg_order * 100) if previous_avg_order > 0 else 0
+customer_change = ((current_customers - previous_customers) / previous_customers * 100) if previous_customers > 0 else 0
+
 with col1:
-    st.metric("Total Revenue", value=f"${total_revenue:,.0f}", delta=-5)
+    st.metric(
+        "Total Revenue",
+        value=f"${total_revenue:,.0f}",
+        delta=f"{revenue_change:+.1f}% vs last 30 days"
+    )
 with col2:
-    st.metric("Total Volume (Tons)", f"{total_volume:,.0f}")
+    st.metric(
+        "Total Volume (Tons)",
+        f"{total_volume:,.0f}",
+        delta=f"{volume_change:+.1f}% vs last 30 days"
+    )
 with col3:
-    st.metric("Avg Order Size (Tons)", f"{avg_order_size:.1f}")
+    st.metric(
+        "Avg Order Size (Tons)",
+        f"{avg_order_size:.1f}",
+        delta=f"{avg_order_change:+.1f}% vs last 30 days"
+    )
 with col4:
-    st.metric("Total Customers", total_customers)
+    st.metric(
+        "Total Customers",
+        total_customers,
+        delta=f"{customer_change:+.1f}% vs last 30 days"
+    )
 
 # Add spacing after metrics
 st.markdown("---")
@@ -725,196 +853,120 @@ st.plotly_chart(fig_revenue, use_container_width=True)
 #         </div>
 #     """, unsafe_allow_html=True)
 
-# ====== DYNAMIC PIE CHART SECTION ======
+# ====== PIE CHARTS - ALL THREE IN ONE ROW ======
 
-# Add smooth transition CSS
-st.markdown(create_smooth_transition_css(), unsafe_allow_html=True)
+st.subheader("📊 Distribution Analysis")
 
-# Prepare data
+# Prepare data for all three pie charts
 category_dist = df_filtered.groupby('customer_category')['sale_amount'].sum().reset_index()
-total_revenue_filtered = df_filtered['sale_amount'].sum()
-
-# Initialize session state for describe button
-if 'show_description' not in st.session_state:
-    st.session_state.show_description = False
-
-# Describe button (centered)
-col_center = st.columns([1, 1, 1])
-with col_center[2]:
-    if st.button("🧠 Describe Chart", key="describe_pie", use_container_width=True):
-        st.session_state.show_description = not st.session_state.show_description
-        st.rerun()
-
-# Dynamic layout based on description state
-if st.session_state.show_description:
-    # Two-column layout with description
-    pie_col1, pie_col2 = st.columns([1.2, 1])
-    
-    with pie_col1:
-        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        enhanced_fig = create_enhanced_pie_chart(category_dist, is_full_width=False)
-        st.plotly_chart(enhanced_fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with pie_col2:
-        st.markdown('<div class="description-panel">', unsafe_allow_html=True)
-        
-        # AI-powered description in scrollable container
-        with st.spinner("🧠 Analyzing chart data..."):
-            ai_client = get_cached_ai_client()
-            if ai_client and len(category_dist) > 0:
-                ai_description = generate_chart_description(
-                    category_dist, 
-                    total_revenue_filtered, 
-                    ai_client
-                )
-                
-                # Scrollable AI insights container
-                st.markdown(f"""
-                <div class="ai-insights-container">
-                    <div class="ai-insights-header">
-                        🤖 AI Chart Analysis
-                    </div>
-                    <div class="ai-insights-content">
-                        {ai_description}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.error("Unable to generate AI description")
-        
-        # Compact quick stats below the scrollable box
-        if len(category_dist) > 0:
-            top_category = category_dist.loc[category_dist['sale_amount'].idxmax()]
-            
-            st.markdown(f"""
-            <div class="quick-stats-container">
-                <h4>📊 Quick Stats</h4>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="text-align: center; flex: 1;">
-                        <strong style="color: #418FDE; font-size: 1.1rem;">{top_category['customer_category']}</strong><br>
-                        <small style="color: #6b7280;">Top Category</small><br>
-                        <span style="color: #1F2B3A; font-weight: 600;">${top_category['sale_amount']:,.0f}</span>
-                    </div>
-                    <div style="text-align: center; flex: 1;">
-                        <strong style="color: #418FDE; font-size: 1.1rem;">{len(category_dist)}</strong><br>
-                        <small style="color: #6b7280;">Categories</small><br>
-                        <span style="color: #1F2B3A; font-weight: 600;">Active</span>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-else:
-    # Full-width layout without description
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    enhanced_fig = create_enhanced_pie_chart(category_dist, is_full_width=True)
-    st.plotly_chart(enhanced_fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-pie_col3, pie_col4 = st.columns([1, 1])
 region_dist = df_filtered.groupby('warehouse_region')['sale_amount'].sum().reset_index()
-with pie_col3:
-    st.subheader("🥧 Warehouse Region Mix")
+product_mix = df_filtered.groupby('product_name')['final_tons_sold'].sum().reset_index()
+
+# Create three columns for pie charts
+pie_col1, pie_col2, pie_col3 = st.columns(3)
+
+# Chart 1: Customer Category
+with pie_col1:
+    st.markdown("**Revenue by Customer Category**")
+    fig_category = px.pie(
+        category_dist,
+        values='sale_amount',
+        names='customer_category',
+        height=400,
+        color_discrete_sequence=['#418FDE', '#FF6B35', '#1F2B3A', '#8BB8E8']
+    )
+    fig_category.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        textfont_size=10,
+        marker=dict(line=dict(color='white', width=2))
+    )
+    fig_category.update_layout(
+        margin=dict(t=20, r=20, l=20, b=20),
+        showlegend=True,
+        legend=dict(font=dict(size=9))
+    )
+    st.plotly_chart(fig_category, use_container_width=True)
+
+# Chart 2: Warehouse Region
+with pie_col2:
+    st.markdown("**Revenue by Warehouse Region**")
     fig_region = px.pie(
-        region_dist, 
-        values='sale_amount', 
+        region_dist,
+        values='sale_amount',
         names='warehouse_region',
-        title='Revenue by Warehouse Region',
-        height=450,
-        color_discrete_sequence=['#418FDE', '#FF6B35', '#1F2B3A', '#8BB8E8', '#F4F6FB', '#E0E7F1']
+        height=400,
+        color_discrete_sequence=['#FF6B35', '#418FDE', '#1F2B3A', '#8BB8E8', '#F4F6FB']
     )
-
-    fig_region.update_layout(
-        title=dict(
-            text='Revenue by Warehouse Region',
-            font=dict(size=18, color='#1F2B3A', family='Segoe UI'),
-            x=0.02
-        ),
-        plot_bgcolor='rgba(244, 246, 251, 0.9)',
-        paper_bgcolor='rgba(244, 246, 251, 0.9)',
-        font=dict(family="Segoe UI", size=12, color="#1F2B3A"),
-        margin=dict(t=60, r=40, l=40, b=40),
-        hoverlabel=dict(
-            bgcolor="#1F2B3A",
-            font_size=13,
-            font_family="Segoe UI",
-            font_color="white"
-        ),
-        legend=dict(
-            font=dict(color='#1F2B3A', size=11),
-            bgcolor='rgba(244, 246, 251, 0.8)',
-            bordercolor='rgba(65, 143, 222, 0.2)',
-            borderwidth=1
-        )
-    )
-
     fig_region.update_traces(
         textposition='inside',
         textinfo='percent+label',
-        textfont_size=11,
-        textfont_color='white',
-        marker=dict(line=dict(color='white', width=2)),
-        hovertemplate='<b>%{label}</b><br>Revenue: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>'
+        textfont_size=10,
+        marker=dict(line=dict(color='white', width=2))
     )
-
-    # Add container class for styling
-    st.markdown('<div class="pie-chart-container">', unsafe_allow_html=True)
+    fig_region.update_layout(
+        margin=dict(t=20, r=20, l=20, b=20),
+        showlegend=True,
+        legend=dict(font=dict(size=9))
+    )
     st.plotly_chart(fig_region, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-
-with pie_col4:
-    st.subheader("🥧 Product Mix")
-    product_mix = df_filtered.groupby('product_name')['final_tons_sold'].sum().reset_index()
-    
+# Chart 3: Product Mix
+with pie_col3:
+    st.markdown("**Sales Volume by Product Type**")
     fig_product = px.pie(
-        product_mix, 
-        values='final_tons_sold', 
+        product_mix,
+        values='final_tons_sold',
         names='product_name',
-        title='Sales Volume by Product Type',
-        height=450,
-        # color_discrete_sequence=['#FF6B35', '#418FDE', '#1F2B3A', '#F4F6FB', '#E0E7F1', '#8BB8E8']
+        height=400,
+        color_discrete_sequence=['#1F2B3A', '#FF6B35', '#418FDE', '#8BB8E8']
     )
-    
-    fig_product.update_layout(
-        title=dict(
-            text='Sales Volume by Product Type',
-            font=dict(size=18, color='#1F2B3A', family='Segoe UI'),
-            x=0.5
-        ),
-        plot_bgcolor='#418FDE',  # Match main page background
-        paper_bgcolor='#418FDE',  # Match main page background
-        font=dict(family="Segoe UI", size=12, color="white"),  # White text for contrast
-        margin=dict(t=60, r=40, l=40, b=40),
-        hoverlabel=dict(
-            bgcolor="#1F2B3A",
-            font_size=13,
-            font_family="Segoe UI",
-            font_color="white"
-        ),
-        legend=dict(
-            font=dict(color='white', size=11),  # White legend text
-            bgcolor='rgba(31, 43, 58, 0.8)',  # Dark background for legend
-            bordercolor='rgba(255, 255, 255, 0.3)',
-            borderwidth=1
-        )
-    )
-    
     fig_product.update_traces(
         textposition='inside',
         textinfo='percent+label',
-        textfont_size=11,
-        textfont_color='white',
+        textfont_size=10,
         marker=dict(line=dict(color='white', width=2))
     )
-    
-    # Add container class for styling
-    st.markdown('<div class="pie-chart-container">', unsafe_allow_html=True)
+    fig_product.update_layout(
+        margin=dict(t=20, r=20, l=20, b=20),
+        showlegend=True,
+        legend=dict(font=dict(size=9))
+    )
     st.plotly_chart(fig_product, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("---")
+
+# ====== DESCRIBE BUSINESS JOURNEY SECTION ======
+st.subheader("📖 Business Journey Analysis")
+
+# Initialize session state
+if 'show_journey' not in st.session_state:
+    st.session_state.show_journey = False
+
+# Button to trigger analysis
+col_button = st.columns([2, 1, 2])
+with col_button[1]:
+    if st.button("🧠 Analyze Business Journey", key="describe_journey", use_container_width=True, type="primary"):
+        st.session_state.show_journey = not st.session_state.show_journey
+        st.rerun()
+
+# Show journey analysis if toggled
+if st.session_state.show_journey:
+    with st.spinner("🔍 Analyzing your business journey..."):
+        ai_client = get_cached_ai_client()
+        if ai_client:
+            journey_analysis = generate_business_journey(df, ai_client)
+
+            st.markdown(f"""
+            <div style="background-color: #f4f6fb; border-left: 4px solid #418FDE; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #418FDE; margin-top: 0;">🤖 AI-Generated Business Journey Insights</h3>
+                <div style="color: #1F2B3A; line-height: 1.8;">
+                    {journey_analysis}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.error("Unable to generate business journey analysis. Please check AI client configuration.")
 
 st.markdown("---")
 st.subheader("🔍 Search by Customer Name")
