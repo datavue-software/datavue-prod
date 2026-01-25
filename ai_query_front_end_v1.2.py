@@ -5,7 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import time
-import ai_query_assistant
+import ai_query_assistant_old
 import random
 
 # ====== FIXED AI CLIENT SETUP ======
@@ -14,7 +14,7 @@ def get_chart_ai_client():
     """Get AI client for chart generation - Fixed version"""
     try:
         # Create assistant instance and get client
-        assistant = ai_query_assistant.AIQueryAssistant()
+        assistant = ai_query_assistant_old.AIQueryAssistant()
         return assistant.client  # Access the client directly
     except Exception as e:
         st.error(f"Failed to initialize AI client: {e}")
@@ -545,12 +545,12 @@ def execute_and_store_query(actual_input):
     # Execute new query
     try:
         print("ai_query_assistant.run_sql")
-        result = ai_query_assistant.run_sql(actual_input, verbose=False)
+        result = ai_query_assistant_old.run_sql(actual_input, verbose=False)
         
         st.write(result)
         if result is not None:
             # Convert to our result format
-            assistant = ai_query_assistant.AIQueryAssistant()
+            assistant = ai_query_assistant_old.AIQueryAssistant()
             result_dict = assistant.query(actual_input, verbose=False)
             
             # Check if we got a valid result
